@@ -24,7 +24,7 @@ export class WebRTCTransfer {
   private callbacks: TransferCallbacks;
   private receivingFile: {
     metadata: FileMetadata;
-    chunks: ArrayBuffer[];
+    chunks: Uint8Array[];
     receivedSize: number;
     startTime: number;
   } | null = null;
@@ -51,11 +51,18 @@ export class WebRTCTransfer {
         },
       });
 
+      // Timeout for connection
+      const timeout = setTimeout(() => {
+        this.callbacks.onError('Connection timeout - please try again');
+        reject(new Error('Connection timeout'));
+      }, 30000);
+
       this.peer.on('signal', (data) => {
         socket.emit('signal', { roomId: this.roomId, signal: data });
       });
 
       this.peer.on('connect', () => {
+        clearTimeout(timeout);
         console.log('Peer connected!');
         resolve();
       });
@@ -65,6 +72,7 @@ export class WebRTCTransfer {
       });
 
       this.peer.on('error', (err) => {
+        clearTimeout(timeout);
         console.error('Peer error:', err);
         this.callbacks.onError(err.message);
         reject(err);
@@ -83,40 +91,42 @@ export class WebRTCTransfer {
   }
 
   private handleIncomingData(data: ArrayBuffer | Uint8Array) {
-    // Convert to ArrayBuffer if needed
-    const buffer = data instanceof ArrayBuffer ? data : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    // Convert to ArrayBuffer
+    const buffer = data instanceof ArrayBuffer ? data : data.buffer;
     
-    // Check if it's metadata (JSON string)
-    try {
-      const text = new TextDecoder().decode(buffer);
-      const parsed = JSON.parse(text);
-      
-      if (parsed.type === 'file-start') {
-        this.receivingFile = {
-          metadata: parsed.metadata,
-          chunks: [],
-          receivedSize: 0,
-          startTime: Date.now(),
-        };
-        this.callbacks.onFileStart(parsed.metadata);
-        return;
-      }
-      
-      if (parsed.type === 'file-end') {
-        if (this.receivingFile) {
-          const blob = new Blob(this.receivingFile.chunks, { type: this.receivingFile.metadata.type });
-          this.callbacks.onFileComplete(this.receivingFile.metadata.id, blob);
-          this.receivingFile = null;
+    // Check if it's metadata (JSON string) - small messages
+    if (buffer.byteLength < 1024) {
+      try {
+        const text = new TextDecoder().decode(buffer);
+        const parsed = JSON.parse(text);
+        
+        if (parsed.type === 'file-start') {
+          this.receivingFile = {
+            metadata: parsed.metadata,
+            chunks: [],
+            receivedSize: 0,
+            startTime: Date.now(),
+          };
+          this.callbacks.onFileStart(parsed.metadata);
+          return;
         }
-        return;
+        
+        if (parsed.type === 'file-end') {
+          if (this.receivingFile) {
+            const blob = new Blob(this.receivingFile.chunks as BlobPart[], { type: this.receivingFile.metadata.type });
+            this.callbacks.onFileComplete(this.receivingFile.metadata.id, blob);
+            this.receivingFile = null;
+          }
+          return;
+        }
+      } catch {
+        // Not JSON, must be file chunk
       }
-    } catch {
-      // Not JSON, must be file chunk
     }
 
     // Handle file chunk
     if (this.receivingFile) {
-      this.receivingFile.chunks.push(buffer);
+      this.receivingFile.chunks.push(new Uint8Array(buffer));
       this.receivingFile.receivedSize += buffer.byteLength;
       
       const progress = (this.receivingFile.receivedSize / this.receivingFile.metadata.size) * 100;
@@ -142,6 +152,9 @@ export class WebRTCTransfer {
     // Send file start message
     this.peer.send(JSON.stringify({ type: 'file-start', metadata }));
 
+    // Small delay to ensure message is received
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Send file in chunks
     const arrayBuffer = await file.arrayBuffer();
     let offset = 0;
@@ -163,6 +176,11 @@ export class WebRTCTransfer {
       const speed = offset / elapsed / (1024 * 1024); // MB/s
 
       this.callbacks.onProgress(fileId, progress, speed);
+    }
+
+    // Wait for buffer to drain
+    while (this.peer.bufferSize > 0) {
+      await new Promise(resolve => setTimeout(resolve, 10));
     }
 
     // Send file end message
