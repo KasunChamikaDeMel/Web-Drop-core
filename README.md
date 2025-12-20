@@ -129,78 +129,6 @@ web-drop-core/
 └── tsconfig.json                # TypeScript config
 ```
 
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Development
-VITE_SIGNALING_SERVER_URL=http://localhost:3001
-
-# Production
-# VITE_SIGNALING_SERVER_URL=https://your-signaling-server.onrender.com
-```
-
-### Signaling Server Configuration
-
-The signaling server accepts these environment variables:
-
-- `PORT`: Server port (default: 3001)
-
-## 🌐 Deployment
-
-### Deploy Signaling Server
-
-#### Option 1: Render
-
-1. Create a new Web Service on [Render](https://render.com)
-2. Connect your repository
-3. Set Build Command: `cd server && npm install`
-4. Set Start Command: `cd server && npm start`
-5. Deploy
-
-#### Option 2: Railway
-
-1. Create a new project on [Railway](https://railway.app)
-2. Connect your repository
-3. Set Root Directory: `server`
-4. Deploy
-
-#### Option 3: Fly.io
-
-```bash
-cd server
-fly launch
-fly deploy
-```
-
-### Deploy Frontend
-
-#### Option 1: Netlify
-
-```bash
-npm run build
-# Upload dist folder to Netlify
-```
-
-#### Option 2: Vercel
-
-```bash
-npm run build
-# Connect repository to Vercel
-```
-
-#### Option 3: GitHub Pages
-
-```bash
-npm run build
-# Deploy dist folder to gh-pages branch
-```
-
-**Important**: After deploying, update your `.env` file with the deployed signaling server URL.
-
 ## 🔒 Security Considerations
 
 - All file transfers are peer-to-peer and encrypted via WebRTC (DTLS/SRTP)
@@ -324,7 +252,5 @@ For issues and questions:
 - [ ] Add TURN server support for better connectivity
 
 ---
-
-Made with ❤️ by [Your Name]
 
 **⚡ Start transferring files the modern way!**
