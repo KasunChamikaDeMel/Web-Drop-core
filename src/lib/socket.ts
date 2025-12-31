@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Replace this with your deployed signaling server URL
-const SIGNALING_SERVER_URL = 'https://web-drop-signaling-server.up.railway.app';
+const SIGNALING_SERVER_URL = 'https://web-drop-signaling.yourusername.repl.co'; // Update with your Replit URL
 
 let socket: Socket | null = null;
 
