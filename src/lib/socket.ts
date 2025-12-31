@@ -1,4 +1,13 @@
-import { io, Socket } from 'socket.io-client';
+// Use global Socket.IO from CDN (same as working debug test)
+declare global {
+  interface Window {
+    io: any;
+  }
+}
+
+const { io } = window;
+
+type Socket = ReturnType<typeof io>;
 
 // Replace this with your deployed signaling server URL
 const SIGNALING_SERVER_URL = 'https://web-drop-signaling-server--chamikakasun336.replit.app';
