@@ -46,9 +46,11 @@ const Room = () => {
     setConnectionStatus('connecting');
 
     try {
+      console.log('Sender: Attempting to connect to socket...');
       await connectSocket();
       const socket = getSocket();
-
+      
+      console.log('Sender: Socket connected, joining room:', roomId);
       socket.emit('join-room', { roomId });
       console.log('Attempting to join room:', roomId);
 
@@ -122,15 +124,15 @@ const Room = () => {
       });
 
     } catch (error) {
-      console.error('Failed to join room:', error);
+      console.error('Sender: Failed to connect to socket:', error);
       setConnectionStatus('error');
       toast({
-        title: 'Connection failed',
-        description: 'Could not connect to the signaling server.',
+        title: 'Connection Error',
+        description: 'Could not connect to the signaling server. Please check your internet connection.',
         variant: 'destructive',
       });
     }
-  }, [roomId, reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed, toast]);
+  }, [roomId, reset, setRoomId, setIsHost, setConnectionStatus, toast]);
 
   useEffect(() => {
     joinRoom();

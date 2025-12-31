@@ -10,7 +10,7 @@ export const getSocket = (): Socket => {
     socket = io(SIGNALING_SERVER_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: false,
-      timeout: 20000,
+      timeout: 30000,
       forceNew: true
     });
   }
