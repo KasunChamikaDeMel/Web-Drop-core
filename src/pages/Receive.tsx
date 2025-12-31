@@ -49,9 +49,12 @@ const Receive = () => {
     setConnectionStatus('connecting');
 
     try {
+      console.log('Receiver: Starting socket connection...');
       await connectSocket();
+      console.log('Receiver: Socket connected successfully');
       const socket = getSocket();
 
+      console.log('Receiver: Emitting create-room for:', newRoomId);
       socket.emit('create-room', { roomId: newRoomId });
       console.log('Created room:', newRoomId);
 
@@ -115,7 +118,12 @@ const Receive = () => {
       });
 
     } catch (error) {
-      console.error('Failed to initialize room:', error);
+      console.error('Receiver: Failed to initialize room:', error);
+      console.error('Receiver: Error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: typeof error
+      });
       setConnectionStatus('error');
     } finally {
       isInitializingRef.current = false;
