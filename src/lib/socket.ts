@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Replace this with your deployed signaling server URL
-const SIGNALING_SERVER_URL = 'https://web-drop-signaling.yourusername.repl.co'; // Update with your Replit URL
+const SIGNALING_SERVER_URL = 'https://web-drop-signaling-server--chamikakasun336.replit.app';
 
 let socket: Socket | null = null;
 
@@ -10,6 +10,8 @@ export const getSocket = (): Socket => {
     socket = io(SIGNALING_SERVER_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: false,
+      timeout: 20000,
+      forceNew: true
     });
   }
   return socket;
@@ -38,6 +40,10 @@ export const connectSocket = (): Promise<void> => {
     s.once('connect_error', (error) => {
       console.error('Socket connection error:', error);
       reject(error);
+    });
+
+    s.once('disconnect', () => {
+      console.log('Socket disconnected');
     });
   });
 };
