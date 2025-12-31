@@ -34,6 +34,12 @@ const Receive = () => {
   useWakeLock(isTransferring);
 
   const initializeRoom = useCallback(async () => {
+    // Prevent re-initialization if already has a room
+    if (roomId) {
+      console.log('Room already exists, skipping initialization');
+      return;
+    }
+    
     reset();
     const newRoomId = generateRoomId();
     setRoomId(newRoomId);
@@ -112,7 +118,7 @@ const Receive = () => {
       console.error('Failed to initialize room:', error);
       setConnectionStatus('error');
     }
-  }, [reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed, connectionStatus]);
+  }, [reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed]);
 
   useEffect(() => {
     initializeRoom();
