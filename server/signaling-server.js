@@ -140,7 +140,7 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 console.log('Starting server on port:', PORT);
 

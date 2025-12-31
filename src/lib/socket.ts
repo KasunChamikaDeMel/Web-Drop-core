@@ -7,11 +7,10 @@ let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
+    console.log('Creating socket to:', SIGNALING_SERVER_URL);
     socket = io(SIGNALING_SERVER_URL, {
-      transports: ['websocket', 'polling'],
+      transports: ['websocket', 'polling'], // Try both transports
       autoConnect: false,
-      timeout: 30000,
-      forceNew: true
     });
   }
   return socket;
@@ -30,14 +29,22 @@ export const connectSocket = (): Promise<void> => {
     }
     
     console.log('Attempting to connect socket...');
-    s.connect();
     
+    const timeout = setTimeout(() => {
+      console.error('Socket connection timeout');
+      reject(new Error('Connection timeout'));
+    }, 10000);
+    
+    s.connect();
+
     s.once('connect', () => {
+      clearTimeout(timeout);
       console.log('Connected to signaling server successfully');
       resolve();
     });
     
     s.once('connect_error', (error) => {
+      clearTimeout(timeout);
       console.error('Socket connection error:', error);
       reject(error);
     });
