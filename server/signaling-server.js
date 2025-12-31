@@ -141,6 +141,8 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 3001;
 
+console.log('Starting server on port:', PORT);
+
 httpServer.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);
 });
