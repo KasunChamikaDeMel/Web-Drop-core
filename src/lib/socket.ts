@@ -8,12 +8,23 @@ let socket: Socket | null = null;
 export const getSocket = (): Socket => {
   if (!socket) {
     console.log('Creating socket to:', SIGNALING_SERVER_URL);
-    socket = io(SIGNALING_SERVER_URL, {
-      transports: ['websocket', 'polling'], // Try both transports
-      autoConnect: false,
-    });
+    socket = io(SIGNALING_SERVER_URL); // Minimal configuration
   }
   return socket;
+};
+
+// Test HTTP connection first
+export const testHttpConnection = async (): Promise<boolean> => {
+  try {
+    console.log('Testing HTTP connection to:', SIGNALING_SERVER_URL);
+    const response = await fetch(SIGNALING_SERVER_URL);
+    const data = await response.json();
+    console.log('HTTP test successful:', data);
+    return true;
+  } catch (error) {
+    console.error('HTTP test failed:', error);
+    return false;
+  }
 };
 
 export const connectSocket = (): Promise<void> => {
@@ -21,36 +32,23 @@ export const connectSocket = (): Promise<void> => {
     const s = getSocket();
     
     console.log('Socket connected status:', s.connected);
-    
+
     if (s.connected) {
       console.log('Socket already connected');
       resolve();
       return;
     }
-    
-    console.log('Attempting to connect socket...');
-    
-    const timeout = setTimeout(() => {
-      console.error('Socket connection timeout');
-      reject(new Error('Connection timeout'));
-    }, 10000);
-    
-    s.connect();
+
+    console.log('Waiting for socket to connect...');
 
     s.once('connect', () => {
-      clearTimeout(timeout);
       console.log('Connected to signaling server successfully');
       resolve();
     });
     
     s.once('connect_error', (error) => {
-      clearTimeout(timeout);
-      console.error('Socket connection error:', error);
+      console.error('Socket connection error details:', error);
       reject(error);
-    });
-
-    s.once('disconnect', () => {
-      console.log('Socket disconnected');
     });
   });
 };

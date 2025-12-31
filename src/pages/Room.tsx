@@ -6,7 +6,7 @@ import { FileDropzone } from '@/components/FileDropzone';
 import { TransferProgress } from '@/components/TransferProgress';
 import { useTransferStore } from '@/store/useTransferStore';
 import { useWakeLock } from '@/hooks/useWakeLock';
-import { connectSocket, getSocket, disconnectSocket } from '@/lib/socket';
+import { connectSocket, getSocket, disconnectSocket, testHttpConnection } from '@/lib/socket';
 import { WebRTCTransfer } from '@/lib/webrtc';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Send, RefreshCw } from 'lucide-react';

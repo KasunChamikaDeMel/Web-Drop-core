@@ -6,7 +6,7 @@ import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { TransferProgress } from '@/components/TransferProgress';
 import { useTransferStore } from '@/store/useTransferStore';
 import { useWakeLock } from '@/hooks/useWakeLock';
-import { connectSocket, getSocket, generateRoomId, disconnectSocket } from '@/lib/socket';
+import { connectSocket, getSocket, generateRoomId, disconnectSocket, testHttpConnection } from '@/lib/socket';
 import { WebRTCTransfer } from '@/lib/webrtc';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
