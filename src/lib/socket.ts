@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Replace this with your deployed signaling server URL
-const SIGNALING_SERVER_URL = import.meta.env.VITE_SIGNALING_SERVER_URL || 'http://localhost:3001';
+const SIGNALING_SERVER_URL = 'https://web-drop-signaling-server.up.railway.app';
 
 let socket: Socket | null = null;
 
