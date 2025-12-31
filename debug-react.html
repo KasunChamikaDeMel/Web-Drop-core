@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>React-like Socket Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>React-like Socket Test</h1>
+    <div id="status">Ready to test</div>
+    <div id="logs"></div>
+    <button onclick="testReceiver()">Test Receiver</button>
+    <button onclick="testSender('ABC123')">Test Sender</button>
+    
+    <script>
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+        let socket = null;
+        
+        function log(message) {
+            console.log(message);
+            logsDiv.innerHTML += '<div>' + message + '</div>';
+        }
+        
+        // Simulate React app socket logic
+        function getSocket() {
+            if (!socket) {
+                log('Creating socket to: https://web-drop-signaling-server--chamikakasun336.replit.app');
+                socket = io('https://web-drop-signaling-server--chamikakasun336.replit.app');
+            }
+            return socket;
+        }
+        
+        function connectSocket() {
+            return new Promise((resolve, reject) => {
+                const s = getSocket();
+                
+                log('Socket connected status: ' + s.connected);
+
+                if (s.connected) {
+                    log('Socket already connected');
+                    resolve();
+                    return;
+                }
+
+                log('Waiting for socket to connect...');
+
+                const timeout = setTimeout(() => {
+                    log('Socket connection timeout after 10 seconds');
+                    reject(new Error('Socket connection timeout'));
+                }, 10000);
+
+                s.once('connect', () => {
+                    clearTimeout(timeout);
+                    log('Connected to signaling server successfully');
+                    resolve();
+                });
+                
+                s.once('connect_error', (error) => {
+                    clearTimeout(timeout);
+                    log('Socket connection error details: ' + error);
+                    reject(error);
+                });
+            });
+        }
+        
+        async function testReceiver() {
+            try {
+                log('=== RECEIVER TEST ===');
+                await connectSocket();
+                const socket = getSocket();
+                
+                socket.emit('create-room', { roomId: 'TEST123' });
+                log('Created room: TEST123');
+                
+                socket.on('peer-joined', () => {
+                    log('Peer joined the room');
+                });
+                
+                statusDiv.textContent = 'Receiver ready';
+            } catch (error) {
+                log('Receiver error: ' + error.message);
+                statusDiv.textContent = 'Receiver error: ' + error.message;
+            }
+        }
+        
+        async function testSender(roomId) {
+            try {
+                log('=== SENDER TEST ===');
+                await connectSocket();
+                const socket = getSocket();
+                
+                log('Sender: Socket connected, joining room: ' + roomId);
+                socket.emit('join-room', { roomId });
+                log('Attempting to join room: ' + roomId);
+                
+                socket.on('room-not-found', () => {
+                    log('Room not found: ' + roomId);
+                });
+                
+                socket.on('room-joined', () => {
+                    log('Room joined successfully');
+                });
+                
+                socket.on('peer-joined', () => {
+                    log('Peer joined, ready for WebRTC');
+                });
+                
+                statusDiv.textContent = 'Sender ready';
+            } catch (error) {
+                log('Sender error: ' + error.message);
+                statusDiv.textContent = 'Sender error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

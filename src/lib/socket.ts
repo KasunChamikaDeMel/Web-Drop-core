@@ -5,7 +5,10 @@ declare global {
   }
 }
 
-const { io } = window;
+// Ensure io is available
+const io = window.io || (() => {
+  throw new Error('Socket.IO not loaded from CDN');
+})();
 
 type Socket = ReturnType<typeof io>;
 
