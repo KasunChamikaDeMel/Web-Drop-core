@@ -10,8 +10,13 @@ const Send = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = (code: string) => {
+    console.log('Room code submitted:', code);
+    if (!code || code.trim().length === 0) {
+      console.error('Empty room code provided');
+      return;
+    }
     setIsLoading(true);
-    navigate(`/room/${code}`);
+    navigate(`/room/${code.trim().toUpperCase()}`);
   };
 
   return (

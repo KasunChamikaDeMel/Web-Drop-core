@@ -50,8 +50,15 @@ const Room = () => {
       const socket = getSocket();
 
       socket.emit('join-room', { roomId });
+      console.log('Attempting to join room:', roomId);
+
+      // Clean up any existing listeners
+      socket.off('room-not-found');
+      socket.off('room-joined');
+      socket.off('peer-joined');
 
       socket.on('room-not-found', () => {
+        console.log('Room not found:', roomId);
         toast({
           title: 'Room not found',
           description: 'The room code is invalid or has expired.',
@@ -61,43 +68,57 @@ const Room = () => {
       });
 
       socket.on('room-joined', async () => {
-        console.log('Joined room successfully');
+        console.log('Joined room successfully, waiting for peer');
         
-        webrtcRef.current = new WebRTCTransfer(roomId, true, {
-          onFileStart: (metadata) => {
-            addFile({
-              id: metadata.id,
-              name: metadata.name,
-              size: metadata.size,
-              type: metadata.type,
-              progress: 0,
-              status: 'transferring',
+        // Wait for peer-joined event before initializing WebRTC
+        socket.on('peer-joined', async () => {
+          console.log('Peer joined, initializing WebRTC as non-initiator');
+          
+          try {
+            webrtcRef.current = new WebRTCTransfer(roomId!, false, {
+              onFileStart: (metadata) => {
+                console.log('Receiving file:', metadata.name);
+                addFile({
+                  id: metadata.id,
+                  name: metadata.name,
+                  size: metadata.size,
+                  type: metadata.type,
+                  progress: 0,
+                  status: 'transferring',
+                });
+              },
+              onProgress: (fileId, progress, speed) => {
+                updateFileProgress(fileId, progress);
+                setTransferSpeed(speed);
+              },
+              onFileComplete: (fileId) => {
+                console.log('File sent successfully:', fileId);
+                updateFileStatus(fileId, 'completed');
+                
+                const currentFiles = useTransferStore.getState().files;
+                const allComplete = currentFiles.every(f => f.id === fileId || f.status === 'completed');
+                if (allComplete) {
+                  setConnectionStatus('completed');
+                  setTransferSpeed(0);
+                  setIsSending(false);
+                }
+              },
+              onError: (error) => {
+                console.error('Transfer error:', error);
+                setConnectionStatus('error');
+                setIsSending(false);
+              },
             });
-          },
-          onProgress: (fileId, progress, speed) => {
-            updateFileProgress(fileId, progress);
-            setTransferSpeed(speed);
-          },
-          onFileComplete: (fileId) => {
-            updateFileStatus(fileId, 'completed');
-            
-            const currentFiles = useTransferStore.getState().files;
-            const allComplete = currentFiles.every(f => f.id === fileId || f.status === 'completed');
-            if (allComplete) {
-              setConnectionStatus('completed');
-              setTransferSpeed(0);
-              setIsSending(false);
-            }
-          },
-          onError: (error) => {
-            console.error('Transfer error:', error);
-            setConnectionStatus('error');
-            setIsSending(false);
-          },
-        });
 
-        await webrtcRef.current.initialize();
-        setConnectionStatus('connected');
+            console.log('Initializing WebRTC as non-initiator');
+            await webrtcRef.current.initialize();
+            console.log('WebRTC initialized successfully');
+            setConnectionStatus('connected');
+          } catch (error) {
+            console.error('Failed to initialize WebRTC:', error);
+            setConnectionStatus('error');
+          }
+        });
       });
 
     } catch (error) {
@@ -119,7 +140,7 @@ const Room = () => {
       disconnectSocket();
       reset();
     };
-  }, []);
+  }, [joinRoom, reset]);
 
   const handleFilesSelected = (newFiles: File[]) => {
     setSelectedFiles((prev) => [...prev, ...newFiles]);

@@ -45,45 +45,60 @@ const Receive = () => {
       const socket = getSocket();
 
       socket.emit('create-room', { roomId: newRoomId });
+      console.log('Created room:', newRoomId);
 
+      // Clean up any existing listeners
+      socket.off('peer-joined');
+      socket.off('peer-left');
+
+      console.log('Setting up peer-joined listener for room:', newRoomId);
       socket.on('peer-joined', async () => {
-        console.log('Peer joined the room');
+        console.log('Peer joined the room, initializing WebRTC');
         
-        webrtcRef.current = new WebRTCTransfer(newRoomId, false, {
-          onFileStart: (metadata) => {
-            addFile({
-              id: metadata.id,
-              name: metadata.name,
-              size: metadata.size,
-              type: metadata.type,
-              progress: 0,
-              status: 'transferring',
-            });
-            setConnectionStatus('transferring');
-          },
-          onProgress: (fileId, progress, speed) => {
-            updateFileProgress(fileId, progress);
-            setTransferSpeed(speed);
-          },
-          onFileComplete: (fileId, blob) => {
-            updateFileStatus(fileId, 'completed', blob);
-            
-            // Check if all files are complete
-            const currentFiles = useTransferStore.getState().files;
-            const allComplete = currentFiles.every(f => f.id === fileId || f.status === 'completed');
-            if (allComplete) {
-              setConnectionStatus('completed');
-              setTransferSpeed(0);
-            }
-          },
-          onError: (error) => {
-            console.error('Transfer error:', error);
-            setConnectionStatus('error');
-          },
-        });
+        try {
+          webrtcRef.current = new WebRTCTransfer(newRoomId, true, {
+            onFileStart: (metadata) => {
+              console.log('File transfer started:', metadata.name);
+              addFile({
+                id: metadata.id,
+                name: metadata.name,
+                size: metadata.size,
+                type: metadata.type,
+                progress: 0,
+                status: 'transferring',
+              });
+              setConnectionStatus('transferring');
+            },
+            onProgress: (fileId, progress, speed) => {
+              updateFileProgress(fileId, progress);
+              setTransferSpeed(speed);
+            },
+            onFileComplete: (fileId, blob) => {
+              console.log('File transfer completed:', fileId);
+              updateFileStatus(fileId, 'completed', blob);
+              
+              // Check if all files are complete
+              const currentFiles = useTransferStore.getState().files;
+              const allComplete = currentFiles.every(f => f.id === fileId || f.status === 'completed');
+              if (allComplete) {
+                setConnectionStatus('completed');
+                setTransferSpeed(0);
+              }
+            },
+            onError: (error) => {
+              console.error('Transfer error:', error);
+              setConnectionStatus('error');
+            },
+          });
 
-        await webrtcRef.current.initialize();
-        setConnectionStatus('connected');
+          console.log('Initializing WebRTC as initiator');
+          await webrtcRef.current.initialize();
+          console.log('WebRTC initialized successfully');
+          setConnectionStatus('connected');
+        } catch (error) {
+          console.error('Failed to initialize WebRTC:', error);
+          setConnectionStatus('error');
+        }
       });
 
       socket.on('peer-left', () => {
@@ -97,7 +112,7 @@ const Receive = () => {
       console.error('Failed to initialize room:', error);
       setConnectionStatus('error');
     }
-  }, [reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed]);
+  }, [reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed, connectionStatus]);
 
   useEffect(() => {
     initializeRoom();
@@ -107,7 +122,7 @@ const Receive = () => {
       disconnectSocket();
       reset();
     };
-  }, []);
+  }, [initializeRoom, reset]);
 
   const roomUrl = roomId ? `${window.location.origin}/room/${roomId}` : '';
 

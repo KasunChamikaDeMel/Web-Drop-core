@@ -7,6 +7,7 @@ let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
+    console.log('Creating new socket connection to:', SIGNALING_SERVER_URL);
     socket = io(SIGNALING_SERVER_URL, {
       transports: ['websocket', 'polling'],
       autoConnect: false,
@@ -19,20 +20,24 @@ export const connectSocket = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const s = getSocket();
     
+    console.log('Socket connected status:', s.connected);
+    
     if (s.connected) {
+      console.log('Socket already connected');
       resolve();
       return;
     }
     
+    console.log('Attempting to connect socket...');
     s.connect();
     
     s.once('connect', () => {
-      console.log('Connected to signaling server');
+      console.log('Connected to signaling server successfully');
       resolve();
     });
     
     s.once('connect_error', (error) => {
-      console.error('Connection error:', error);
+      console.error('Socket connection error:', error);
       reject(error);
     });
   });

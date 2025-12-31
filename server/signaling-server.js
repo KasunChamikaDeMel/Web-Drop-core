@@ -71,23 +71,32 @@ io.on('connection', (socket) => {
     socket.isHost = false;
     
     // Notify the host that a peer has joined
+    console.log('Notifying host', room.hostId, 'that peer joined');
     io.to(room.hostId).emit('peer-joined');
     
     // Confirm to the sender that they've joined
+    console.log('Confirming to sender', socket.id, 'that room was joined');
     socket.emit('room-joined');
   });
 
   // Relay WebRTC signaling data
   socket.on('signal', ({ roomId, signal }) => {
+    console.log('Signal received for room:', roomId, 'type:', signal?.type);
     const room = rooms.get(roomId);
     
-    if (!room) return;
+    if (!room) {
+      console.log('Room not found for signal:', roomId);
+      return;
+    }
     
     // Send signal to the other peer
     const targetId = socket.id === room.hostId ? room.peerId : room.hostId;
     
     if (targetId) {
+      console.log('Relaying signal to:', targetId);
       io.to(targetId).emit('signal', { signal });
+    } else {
+      console.log('No target peer found for signal');
     }
   });
 

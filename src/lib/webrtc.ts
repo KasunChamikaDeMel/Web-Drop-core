@@ -43,13 +43,16 @@ export class WebRTCTransfer {
       try {
         this.peer = new Peer({
           initiator: this.isInitiator,
-          trickle: false,
+          trickle: true,
           config: {
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' },
               { urls: 'stun:stun2.l.google.com:19302' },
+              { urls: 'stun:stun3.l.google.com:19302' },
+              { urls: 'stun:stun4.l.google.com:19302' },
             ],
+            iceCandidatePoolSize: 10,
           },
         });
       } catch (err) {
@@ -60,11 +63,13 @@ export class WebRTCTransfer {
       }
 
       const timeout = setTimeout(() => {
+        console.error('WebRTC connection timeout after 10 seconds');
         this.callbacks.onError('Connection timeout - please try again');
         reject(new Error('Connection timeout'));
-      }, 30000);
+      }, 10000);
 
       this.peer.on('signal', (data: SignalData) => {
+        console.log('WebRTC signal data:', data.type);
         socket.emit('signal', { roomId: this.roomId, signal: data });
       });
 
@@ -75,6 +80,7 @@ export class WebRTCTransfer {
       });
 
       this.peer.on('data', (data: ArrayBuffer) => {
+        console.log('Received data:', data.byteLength, 'bytes');
         this.handleIncomingData(data);
       });
 
@@ -87,6 +93,10 @@ export class WebRTCTransfer {
 
       this.peer.on('close', () => {
         console.log('Peer connection closed');
+      });
+
+      this.peer.on('iceStateChange', (state: string) => {
+        console.log('ICE state changed to:', state);
       });
 
       socket.on('signal', ({ signal }: { signal: SignalData }) => {
@@ -122,7 +132,7 @@ export class WebRTCTransfer {
           
           if (parsed.type === 'file-end') {
             if (this.receivingFile) {
-              const blob = new Blob(this.receivingFile.chunks, { 
+              const blob = new Blob(this.receivingFile.chunks as BlobPart[], { 
                 type: this.receivingFile.metadata.type 
               });
               this.callbacks.onFileComplete(this.receivingFile.metadata.id, blob);
