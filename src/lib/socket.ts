@@ -41,12 +41,20 @@ export const connectSocket = (): Promise<void> => {
 
     console.log('Waiting for socket to connect...');
 
+    // Add timeout
+    const timeout = setTimeout(() => {
+      console.error('Socket connection timeout after 10 seconds');
+      reject(new Error('Socket connection timeout'));
+    }, 10000);
+
     s.once('connect', () => {
+      clearTimeout(timeout);
       console.log('Connected to signaling server successfully');
       resolve();
     });
     
     s.once('connect_error', (error) => {
+      clearTimeout(timeout);
       console.error('Socket connection error details:', error);
       reject(error);
     });

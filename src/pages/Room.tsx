@@ -125,10 +125,15 @@ const Room = () => {
 
     } catch (error) {
       console.error('Sender: Failed to connect to socket:', error);
+      console.error('Sender: Error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: typeof error
+      });
       setConnectionStatus('error');
       toast({
         title: 'Connection Error',
-        description: 'Could not connect to the signaling server. Please check your internet connection.',
+        description: `Could not connect to signaling server: ${error.message}`,
         variant: 'destructive',
       });
     }
