@@ -14,6 +14,7 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 const Receive = () => {
   const navigate = useNavigate();
   const webrtcRef = useRef<WebRTCTransfer | null>(null);
+  const isInitializingRef = useRef(false);
   
   const {
     roomId,
@@ -34,12 +35,13 @@ const Receive = () => {
   useWakeLock(isTransferring);
 
   const initializeRoom = useCallback(async () => {
-    // Prevent re-initialization if already has a room
-    if (roomId) {
-      console.log('Room already exists, skipping initialization');
+    // Prevent re-initialization if already has a room or is currently initializing
+    if (roomId || isInitializingRef.current) {
+      console.log('Room already exists or initializing, skipping');
       return;
     }
     
+    isInitializingRef.current = true;
     reset();
     const newRoomId = generateRoomId();
     setRoomId(newRoomId);
@@ -109,14 +111,14 @@ const Receive = () => {
 
       socket.on('peer-left', () => {
         console.log('Peer left the room');
-        if (connectionStatus !== 'completed') {
-          setConnectionStatus('connecting');
-        }
+        // Don't automatically change status - let user handle it
       });
 
     } catch (error) {
       console.error('Failed to initialize room:', error);
       setConnectionStatus('error');
+    } finally {
+      isInitializingRef.current = false;
     }
   }, [reset, setRoomId, setIsHost, setConnectionStatus, addFile, updateFileProgress, updateFileStatus, setTransferSpeed]);
 
@@ -128,13 +130,14 @@ const Receive = () => {
       disconnectSocket();
       reset();
     };
-  }, [initializeRoom, reset]);
+  }, []); // Empty dependency array - run only once on mount
 
   const roomUrl = roomId ? `${window.location.origin}/room/${roomId}` : '';
 
   const handleNewRoom = () => {
     webrtcRef.current?.destroy();
     disconnectSocket();
+    isInitializingRef.current = false; // Reset for new room
     initializeRoom();
   };
 
